@@ -1,0 +1,135 @@
+// Define Pins
+#define BLUE 3
+#define GREEN 5
+#define RED 6
+
+#include <dht_nonblocking.h>
+#define DHT_SENSOR_TYPE DHT_TYPE_11
+
+int buzzer = 12;//the pin of the active buzzer
+static const int DHT_SENSOR_PIN = 2;
+DHT_nonblocking dht_sensor( DHT_SENSOR_PIN, DHT_SENSOR_TYPE );
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin( 9600);
+  pinMode(buzzer,OUTPUT);//initialize the buzzer pin as an output
+  pinMode(RED, OUTPUT);
+  pinMode(GREEN, OUTPUT);
+  pinMode(BLUE, OUTPUT);
+  digitalWrite(RED, HIGH);
+  digitalWrite(GREEN, LOW);
+  digitalWrite(BLUE, LOW);
+}
+
+// define variables
+int redValue = 0;
+int greenValue = 255;
+int blueValue = 0;
+
+/*
+ * Poll for a measurement, keeping the state machine alive.  Returns
+ * true if a measurement is available.
+ */
+static bool measure_environment( float *temperature, float *humidity )
+{
+  static unsigned long measurement_timestamp = millis( );
+
+  /* Measure once every four seconds. */
+  if( millis( ) - measurement_timestamp > 3000ul )
+  {
+    if( dht_sensor.measure( temperature, humidity ) == true )
+    {
+      measurement_timestamp = millis( );
+      return( true );
+    }
+  }
+
+  return( false );
+}
+
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  #define delayTime 10
+  float temperature;
+  float humidity;
+
+     unsigned char i;
+ if( measure_environment( &temperature, &humidity ) == true )
+  {
+    Serial.print( "T = " );
+    Serial.print( temperature, 1 );
+    Serial.print( " deg. C, H = " );
+    Serial.print( humidity, 1 );
+    Serial.println( "%" );
+
+
+    if(temperature > 30 & humidity > 40){
+       for(int i = 0; i < 255; i += 1) // fades out blue bring red full when i=255
+{
+// The following code has been rearranged to match the other two similar sections
+blueValue -= 1;
+redValue += 1;
+// The following was reversed, counting in the wrong directions
+// analogWrite(BLUE, 255 - blueValue);
+// analogWrite(RED, 255 - redValue);
+analogWrite(BLUE, blueValue);
+analogWrite(RED, redValue);
+delay(delayTime);
+}
+    }else if(temperature > 30){
+      redValue = 255;
+      greenValue = 0;
+      blueValue = 0;
+    }else if(humidity > 40){
+      redValue = 0;
+      greenValue = 0;
+      blueValue = 255;
+    }
+    
+    if(temperature < 30 && humidity < 40){
+      greenValue = 255;
+      blueValue = 0;
+      redValue = 0;
+    }
+
+    if(temperature > 35){
+    for(i=0;i<80;i++)
+   {
+    digitalWrite(buzzer,HIGH);
+    delay(1);//wait for 1ms
+    digitalWrite(buzzer,LOW);
+    delay(1);//wait for 1ms
+    }
+    //output another frequency
+     for(i=0;i<100;i++)
+      {
+        digitalWrite(buzzer,HIGH);
+        delay(2);//wait for 2ms
+        digitalWrite(buzzer,LOW);
+        delay(2);//wait for 2ms
+      }
+    }
+
+    if(humidity > 60){
+        for(i=0;i<100;i++)
+      {
+        digitalWrite(buzzer,HIGH);
+        delay(2);//wait for 2ms
+        digitalWrite(buzzer,LOW);
+        delay(2);//wait for 2ms
+      }
+          for(i=0;i<80;i++)
+   {
+    digitalWrite(buzzer,HIGH);
+    delay(1);//wait for 1ms
+    digitalWrite(buzzer,LOW);
+    delay(1);//wait for 1ms
+    }
+    }
+    analogWrite(GREEN, greenValue);
+    analogWrite(BLUE, blueValue);
+    analogWrite(RED, redValue);
+  }
+}
